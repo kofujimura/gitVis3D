@@ -1,14 +1,13 @@
-# CypherVis3D
+# GitVis3D
 
-CypherVis3D is a data visualization tool for viewing the subgraph retrieved by the Cypher query language provided by Neo4j. The subgraph retrieved by Cypher often contains various categories of nodes and they also have multiple properties. It makes difficult to find important characteristics of the graph when nodes are colored for each categories or properties since human being cannot recognize multi-colored items simultaneously. We thus use the icons in a 3D form that express the categories of nodes. 
-
-To retrieve the subgraph from the graph database, user specifies the conditions of "edges" in the Cypher query language. This approach enables to visualizes streaming data easily by specifying in the "ORDER BY" clause.
+GitVis3D is a visualization tool for git communities.
+This is a branch of [CypherVis3D](https://github.com/kofujimura/cypherVis3D).
 
 ## Demo movie
-https://www.youtube.com/watch?v=PcEUL_5NXbI
+to be supplied.
 
 ## Live demo
-http://qa.fujimura.com:8080/neo3vis/
+to be supplied.
 
 ## How to install
 
@@ -28,19 +27,61 @@ http://qa.fujimura.com:8080/neo3vis/
 
 ## How to use
 
-1. Store data into Neo4j (e.g, The movie sample database provided by Neo4j.)
+1. Store data into Neo4j.
 
-2. Start Neo4j
+clone a git repository which you want to be visualized.
+   ```bash
+   git clone ...
+   ```
 
-   Set password to access Neo4j via http://localhost:7474 and edit cypherVis3DWebServer8080.js to set the password.
+create a git commit log file:
+   ```bash
+   git log --stat --date=iso -1000 > log.txt
+   ```
+   
+create csv files using the script below. Note that the input file name must be "log.txt".
+   ```bash
+   pyhton3 gitlogConvertToNeo4jData.py
+   ```
 
-3. Start Web server
+move the created following files to the neo4j import folder.
+  - author_file_relation.csv
+  - author_node.csv
+  - file_file_relation.csv
+  - file_node.csv
 
+start neo4j:
+   ```bash
+   sudo neo4j start
+   ```
+
+import them to the neo4j:
+   ```
+   LOAD CSV WITH HEADERS FROM "file:///author_node.csv" AS csvLine CREATE (n: Author {authorId: toInt(csvLine.author_id), authorName: csvLine.author_name, authorMail:csvLine.author_mail } )
+
+   LOAD CSV WITH HEADERS FROM "file:///file_node.csv" AS csvLine CREATE (n: File {fileId: toInt(csvLine.file_id), fileName: csvLine.file_name, fileUpdateDate:csvLine.file_update_date } )
+
+   LOAD CSV WITH HEADERS FROM "file:///file_file_relation.csv" AS csvLine MATCH (m:File), (n:File) WHERE m.fileId = toInt(csvLine.old_file_id) AND n.fileId = toInt(csvLine.new_file_id) CREATE  (m)-[r:UPDATE]->(n)
+
+   LOAD CSV WITH HEADERS FROM "file:///author_file_relation.csv" AS csvLine MATCH (m:Author), (n:File) WHERE m.authorId = toInt(csvLine.author_id) AND n.fileId = toInt(csvLine.file_id) CREATE (m)-[r:CONTRIBUTION]->(n)
+   ```
+
+2. Start web server
+
+set password to access Neo4j via http://localhost:7474 and edit cypherVis3DWebServer8080.js to set the password.
+
+start nodejs web server:
    ```bash
    $ node cypherVis3DWebServer8080.js
    ```
+   
+3. Access http://localhost:8080/gitVis3D.html
 
-4. Access http://localhost:8080/cypherVis3D.html
+4. Run (input Cypher Query)
 
-5. Run (input Cypher Query)
+## Licence
 
+Copyright (c) 2017 Ko Fujimura, Released under the MIT license.
+HTML and JavaScript source, cypherVis3D.html and cypherVis3DWebServer8080.js are MIT Licence.
+
+Note that 3D models, ./models/Baynes and ./models/elexis (https://free3d.com/user/3dregenerator) are not part of this project. These models are examples and must be used for only personal use.
