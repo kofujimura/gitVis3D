@@ -9,8 +9,8 @@ body {
 div.query {
   position: absolute;
   top: 0%;
-  padding-left: 20%;
   width: 100%;
+  padding-left: 20%;
   text-align: left;  
 }
 
@@ -27,6 +27,7 @@ div.query textarea {
   text-align: center;
 }
 */
+
 .slider2 {
   position: absolute;
   top: 0px;
@@ -35,34 +36,32 @@ div.query textarea {
   text-align: center;
 }
 
-.sliders {
+.slider3 {
   position: absolute;
-  top: 75px;
+  top: 60px;
   width: 20%;
   color: white;
   text-align: center;
 }
 
-/*
-.slider3 {
+.buttonA {
   position: absolute;
-  top: 110px;
-  left: 20%;
+  top: 140px;
   width: 20%;
   color: white;
   text-align: center;
 }
-*/
+
 .menu2 {
   position: absolute;
-  top: 150px;
+  top: 200px;
   width: 20%;
   text-align: center;
 }
 
 .menu {
   position: absolute;
-  top: 270px;
+  top: 320px;
   width: 20%;
   text-align: center;
 }
@@ -172,7 +171,7 @@ input:checked+label::after {
 }
 #slider2 {
     margin:0 auto 0 auto;
-    width: 190px;
+    width: 120px;
 }
 #slider3 {
     margin:0 auto 0 auto;

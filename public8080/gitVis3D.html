@@ -33,8 +33,13 @@
     <p><span>Animation interval (msec): </span><span id="amount2"></span></p>
     <div id="slider2"></div>
   </div>
+  
+  <div class="slider3">
+    <p><span>Time scale: </span><span id="amount3"></span></p>
+    <div id="slider3"></div>
+  </div>
 
-  <div class="sliders">
+  <div class="buttonA">
     <p><button id="buttonA">Show propeties(reload)</button></p>    
   </div>
 
@@ -49,7 +54,6 @@
 /* global THREE */
 /* global d3 */
 /* global io */
-
 
 $(function() {
 
@@ -95,10 +99,12 @@ $(function() {
   
   var currentTime = 0;
   var currentYear = "0000";
+  var currentMonth;
+  var timeScale;
   var startDate;
   
-  //var pickUpHeight = 200;
-  var mesh0,timePlate,timePlateMaterial;
+  var mesh0;
+  var timePlates = [];
   
   var models = {
     girl:{
@@ -146,11 +152,8 @@ $(function() {
       if (node.fileUpdateDate) {
         var date = new Date(node.fileUpdateDate);
         var fileUpdateDate = date.getTime()/86400000;
-        console.log(node.fileUpdateDate);
         if (startDate == undefined) startDate = fileUpdateDate;
-  
-        currentTime = (fileUpdateDate - startDate) * 5;
-
+        if (currentTime < fileUpdateDate - startDate) currentTime = fileUpdateDate - startDate;
         if (currentYear < date.getFullYear()) {
           currentYear = date.getFullYear();
           addTimePlate(currentYear);
@@ -187,9 +190,28 @@ $(function() {
         $("#amount2").html(ui.value);
       }
     });
+    
     nodeAddingInterval = $("#slider2").slider("value");
     $("#amount2").html(nodeAddingInterval);
-    
+
+    $("#slider3").slider({
+      range: "min",
+      value: 2.0,
+      min: 0,
+      max: 20.0,
+      step: 0.1,
+      slide: function(event, ui) {
+        timeScale = ui.value;
+        $("#amount3").html(ui.value);
+        for (let i=0; i<timePlates.length; i++) {
+          timePlates[i].position.y = timePlates[i].time * timeScale;
+        }
+      }
+    });
+
+    timeScale = $("#slider3").slider("value");
+    $("#amount3").html(timeScale);
+  
     $("button").button();  // Apply css to the buttons
   }
   
@@ -535,7 +557,6 @@ $(function() {
       glow[n] = new THREE.Sprite(material);
       glow[n].scale.multiplyScalar(graph.nodes[n].height * 4.0);
       scene.add(glow[n]);
-      console.log(sprites[n]);
     }
   }
 
@@ -578,7 +599,7 @@ $(function() {
     var textWidth = 10 * 160; // px
     canvas.width = 5000; canvas.height = 5000;
     var ctx = canvas.getContext('2d');
-    ctx.fillStyle = 'rgba(0,255,255,0.1)';
+    ctx.fillStyle = 'rgba(0,255,255,0.08)';
     ctx.fillRect(0,0,5000,5000);
     ctx.font = "280px sans-serif";
     ctx.textAlign = 'center';
@@ -587,19 +608,21 @@ $(function() {
     var texture = new THREE.Texture(canvas);
     texture.needsUpdate = true;
     
-    timePlateMaterial = new THREE.MeshBasicMaterial({
+    var timePlateMaterial = new THREE.MeshBasicMaterial({
       side: THREE.DoubleSide,
       transparent: true,
       map: texture
     });
 
-    timePlate = new THREE.Mesh( new THREE.PlaneBufferGeometry(5000, 5000), timePlateMaterial );
+    var timePlate = new THREE.Mesh( new THREE.PlaneBufferGeometry(5000, 5000), timePlateMaterial );
     timePlate.position.x = width/2;
-    timePlate.position.y = currentTime;
+    timePlate.position.y = currentTime * timeScale;
     timePlate.position.z = 0; //height/2; 
     timePlate.rotation.set(-Math.PI/2,0,0);
     timePlate.frustumCulled = false;
+    timePlate.time = currentTime;
     scene2.add(timePlate);
+    timePlates.push(timePlate);
   }
 
   function renderLoop () {
@@ -608,7 +631,7 @@ $(function() {
     force.tick();
     for (let n=0; n<sprites.length; n++) {
       sprites[n].position.x = d3nodes[graph.nodes[n].d3node].x;
-      sprites[n].position.y = graph.nodes[n].z; // + bar[n].scale.y;
+      sprites[n].position.y = graph.nodes[n].z * timeScale;
       sprites[n].position.z = d3nodes[graph.nodes[n].d3node].y;
       if (label1[n]) {
         label1[n].position.x = d3nodes[graph.nodes[n].d3node].x;
@@ -624,10 +647,10 @@ $(function() {
   
     for (let j=0; j<lines.length; j++){
       lines[j].geometry.vertices[0].x = d3nodes[graph.nodes[links[j].source].d3node].x;
-      lines[j].geometry.vertices[0].y = graph.nodes[links[j].source].z;
+      lines[j].geometry.vertices[0].y = graph.nodes[links[j].source].z * timeScale;
       lines[j].geometry.vertices[0].z = d3nodes[graph.nodes[links[j].source].d3node].y;
       lines[j].geometry.vertices[1].x = d3nodes[graph.nodes[links[j].target].d3node].x;
-      lines[j].geometry.vertices[1].y = graph.nodes[links[j].target].z;
+      lines[j].geometry.vertices[1].y = graph.nodes[links[j].target].z * timeScale;
       lines[j].geometry.vertices[1].z = d3nodes[graph.nodes[links[j].target].d3node].y;
       
       lines[j].geometry.verticesNeedUpdate = true;
