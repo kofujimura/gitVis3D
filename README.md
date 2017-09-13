@@ -57,13 +57,13 @@ start neo4j:
 
 import them to the neo4j:
    ```
-   LOAD CSV WITH HEADERS FROM "file:///author_node.csv" AS csvLine CREATE (n: Author {authorId: toInt(csvLine.author_id), authorName: csvLine.author_name, authorMail:csvLine.author_mail } )
+   LOAD CSV WITH HEADERS FROM "file:///author_node.csv" AS csvLine CREATE (n: Author {authorId:csvLine.author_id, authorName:csvLine.author_name, authorMail:csvLine.author_mail } );
 
-   LOAD CSV WITH HEADERS FROM "file:///file_node.csv" AS csvLine CREATE (n: File {fileId: toInt(csvLine.file_id), fileName: csvLine.file_name, fileUpdateDate:csvLine.file_update_date } )
+   LOAD CSV WITH HEADERS FROM "file:///file_node.csv" AS csvLine CREATE (n: File {fileId:csvLine.file_id, fileName:csvLine.file_name, fileUpdateDate:csvLine.file_update_date } );
 
-   LOAD CSV WITH HEADERS FROM "file:///file_file_relation.csv" AS csvLine MATCH (m:File), (n:File) WHERE m.fileId = toInt(csvLine.old_file_id) AND n.fileId = toInt(csvLine.new_file_id) CREATE  (m)-[r:UPDATE]->(n)
+   LOAD CSV WITH HEADERS FROM "file:///file_file_relation.csv" AS csvLine MATCH (m:File), (n:File) WHERE m.fileId = csvLine.old_file_id AND n.fileId = csvLine.new_file_id CREATE  (m)-[r:UPDATE]->(n);
 
-   LOAD CSV WITH HEADERS FROM "file:///author_file_relation.csv" AS csvLine MATCH (m:Author), (n:File) WHERE m.authorId = toInt(csvLine.author_id) AND n.fileId = toInt(csvLine.file_id) CREATE (m)-[r:CONTRIBUTION]->(n)
+   LOAD CSV WITH HEADERS FROM "file:///author_file_relation.csv" AS csvLine MATCH (m:Author), (n:File) WHERE m.authorId = csvLine.author_id AND n.fileId = csvLine.file_id CREATE (m)-[r:CONTRIBUTION]->(n);
    ```
 
 2. Start web server
@@ -82,6 +82,10 @@ start nodejs web server:
 ## Licence
 
 Copyright (c) 2017 Ko Fujimura, Released under the MIT license.
-HTML and JavaScript source, cypherVis3D.html and cypherVis3DWebServer8080.js are MIT Licence.
+gitVis3D.html, gitVis3D.css, gitlogConvertToNeo4jData.py and cypherVis3DWebServer8080.js are MIT Licence.
 
 Note that 3D models, ./models/Baynes and ./models/elexis (https://free3d.com/user/3dregenerator) are not part of this project. These models are examples and must be used for only personal use.
+
+## Acknowledgment
+
+This work was supported by JSPS KAKENHI Grant Number JP26330348.
