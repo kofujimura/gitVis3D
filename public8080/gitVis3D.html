@@ -580,7 +580,10 @@ $(function() {
       var canvas = document.createElement('canvas');
       var text = graph.nodes[n].label;
       var textLength = text.length;
-      if (textLength > 29) text = "..." + text.substring(textLength - 29);
+      if (textLength > 29) {
+        text = "..." + text.substring(textLength - 29);
+        textLength = 32;
+      }
       var textWidth = textLength * 16; // px
       /*
       if (textWidth>32*1.2) textWidth = 32;
