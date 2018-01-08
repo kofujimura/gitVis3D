@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>
+        <%= title %>
+    </title>
+    <meta charset="utf-8">
+    <style>
+    body {
+        font-family: Palatino,"Palatino Linotype", Helvetica, sans-serif;
+    }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+</head>
+
+<body>
+    <!--    <h1><%= title %></h1>-->
+    <h1>Input your GitHub account information to access GitHub API</h1>
+    <table>
+        <tr>
+            <td>Username:</td>
+            <td>
+                <input type="text" id='name'>
+            </td>
+        </tr>
+        <tr>
+            <td>Password:</td>
+            <td>
+                <input type="password" id='pass'>
+            </td>
+        </tr>
+        <tr>
+            <td>Select a project:</td>
+            <td>
+                <select name="project" id="project">
+                    <option value="neo4j/neo4j" selected>neo4j</option>
+                    <option value="d3/d3">d3</option>
+                    <option value="mrdoob/three.js">three.js</option>
+                </select>
+            </td>
+        </tr>        <tr>
+            <td>Limit number of commits to be retrieved</td>
+            <td>
+                <select name="commitlimit" id="commitlimit">
+                    <option value="25" selected>25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="200">200</option>
+                    <option value="300">300</option>
+                    <option value="400">400</option>
+                    <option value="500">500</option>
+                    <option value="1000">1000</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>Maxmum number of searches in the commit tree per commit</td>
+            <td>
+                <select name="accesslimit" id="accesslimit">
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5" selected>5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>Maxmum depth of the commit tree to be searched</td>
+            <td>
+                <select name="depthlimit" id="depthlimit">
+                    <option value="2" selected>2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                </select>
+            </td>
+        </tr>        <tr>
+            <td>
+                <input type="submit" id='trigger' value="submit">
+            </td>
+        </tr>
+    </table>
+    <p>
+        The number of remaining API access：<span id="accessRemaining"></span>
+    </p>
+    <script>
+        $("#trigger").on("click", function () {
+            var name = $("#name").val();
+            var pass = $("#pass").val();
+            var project = $("#project").val();
+            var commitlimit = $("#commitlimit").val();
+            var accesslimit = $("#accesslimit").val();
+            var depthlimit = $("#depthlimit").val();
+
+            var request = $.ajax({
+                type: 'POST',
+                url: 'https://gitvis3d-kofujimura.c9users.io:8081/getdata',  // to be modified in your environment
+                datatype: 'json',
+                data: {
+                    'name': name,
+                    'pass': pass,
+                    'project': project,
+                    'commitlimit': commitlimit,
+                    'accesslimit': accesslimit,
+                    'depthlimit': depthlimit
+                },
+                timeout: 0
+            });
+            request.done(function (data) {
+                console.log(data);
+                $("#accessRemaining").text(data.accessRemaining);
+            })
+            request.fail(function () {
+                console.log('Failure');
+            })
+            request.always(function (data) {
+                console.log('Finished');
+            })
+        });
+    </script>
+
+</body>
+
+</html>

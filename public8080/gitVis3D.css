@@ -1,179 +1,100 @@
-html,
-body {
+html,body {
   height: 100%;
   background-color: #101010;
-  margin: 0;
+  margin: 3px;
   overflow: hidden;
 }
 
-div.query {
-  position: absolute;
-  top: 0%;
-  width: 100%;
-  padding-left: 20%;
-  text-align: left;  
-}
-
-div.query textarea {
-  height: 36px;
-  width: 55%;
-}
-
-/*
-.switch {
+.query {
   position: absolute;
   top: 0px;
-  width: 20%;
-  text-align: center;
+  width: 200px;
+  text-align: right;  
 }
-*/
 
-.slider2 {
+.datepic {
+  width: 100px;
+}
+
+.project {
+  border: 2px;
+  padding: 1px;
+  width: 104px;
+}
+
+.limit {
+  border: 2px;
+  padding: 1px;
+  width: 34px;
+}
+
+.buttonQ {
   position: absolute;
-  top: 0px;
-  width: 20%;
+  top: 146px;
+  width: 200px;
   color: white;
   text-align: center;
 }
 
-.slider3 {
+.speed {
   position: absolute;
-  top: 60px;
-  width: 20%;
+  top: 200px;
+  width: 200px;
+  color: white;
+  text-align: center;
+}
+
+.scale {
+  position: absolute;
+  top: 260px;
+  width: 200px;
   color: white;
   text-align: center;
 }
 
 .buttonA {
   position: absolute;
-  top: 140px;
-  width: 20%;
+  top: 340px;
+  width: 200px;
   color: white;
   text-align: center;
+  font-size: 0.75em;
 }
 
-.menu2 {
+.label {
+  font-size: 2.0em;
+}
+
+.edges {
   position: absolute;
-  top: 200px;
-  width: 20%;
+  top: 400px;
+  width: 200px;
   text-align: center;
+  margin: 1px;
+  font-size: 0.5em;
 }
 
-.menu {
+.nodes {
   position: absolute;
-  top: 320px;
-  width: 20%;
+  top: 520px;
+  width: 200px;
   text-align: center;
+  margin: 1px;
+  font-size: 0.5em;
 }
-
 
 p {
-  font-size: 12px;
-  line-height: 1.5;
+  margin-top: 14px;
+  margin-bottom: 14px;
+  height: 12px;
   color: #fff;
 }
 
-#title {
-  background-color: rgba(225,0,0,0.5);
-  width: 100%;
-  font-size: 24px;
-  color: #fff;
-  text-align: center;
-}
-
-button{
-  /*width: 150px;*/
-  height: 20px;
-  font-size: 50%;
-  /*padding: 2px;*/
-  cursor: pointer;
-}
-
-.ui-button-text {
-  font-size: 0.5em !important;
-  padding: 0.2em !important;
-}
-
-input {
-  display: none;
-}
-input+label,
-input+label::before,
-input+label::after {
-  transition: all .2s;
-}
-input+label {
-  display: inline-block;
-  position: relative;
-  width: 70px;
-  height: 20px;
-  border-radius: 10px;
-  cursor: pointer;
-}
-input+label::before {
-	display: block;
-	content: attr(data-off-label);
-	position: absolute;
-	top: 4px;
-	right: 5.6px;
-	font-family: Arial, sans-serif;
-	font-size: 10px;
-}
-input+label::after {
-	content: '';
-	position: absolute;
-	top: 2px;
-	left: 1px;
-	width: 16px;
-	height: 16px;
-	background-color: #fff;
-	border-radius: 50%;
-}
-input:checked+label::before {
-	content: attr(data-on-label);
-	left: 5.6px;
-	right: auto;
-}
-input:checked+label::after {
-	left: 53.2px;
-	background-color: #f7f7f7;
-}
-
-#demo1+label {
-	background-color: #eee;
-}
-#demo1+label::before {
-	color: #a00;
-}
-#demo1:checked+label {
-	background-color: #3498db;
-}
-#demo1:checked+label::before {
-	color: #fff;
-}
-
-#demo2+label {
-	background-color: #eee;
-}
-#demo2+label::before {
-	color: #a00;
-}
-#demo2:checked+label {
-	background-color: #3498db;
-}
-#demo2:checked+label::before {
-	color: #fff;
-}
-
-#slider1 {
+#speed {
     margin:0 auto 0 auto;
-    width: 120px;
+    width: 150px;
 }
-#slider2 {
+#scale {
     margin:0 auto 0 auto;
-    width: 120px;
-}
-#slider3 {
-    margin:0 auto 0 auto;
-    width: 120px;
+    width: 150px;
 }

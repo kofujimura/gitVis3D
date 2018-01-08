@@ -1,773 +1,800 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-<meta charset="utf-8">
-<title>gitVis3D</title>
+  <meta charset="utf-8">
+  <title>gitVis3D</title>
 </head>
 
 <body>
-<script src="js/jquery-1.11.3.min.js"></script>
+  <script src="js/jquery-1.11.3.min.js"></script>
 
-<script src="../socket.io/socket.io.js"></script>  
+  <script src="../socket.io/socket.io.js"></script>
 
-<script src="js/three.min.js"></script>
-<script src="js/TrackballControls.js"></script>
-<script src="js/d3.v3.min.js"></script>
-<script src="js/OBJLoader.js"></script>
-<script src="js/MTLLoader.js"></script>
-<script src="js/DDSLoader.js"></script>
-<link type="text/css" href="gitVis3D.css" rel="stylesheet" />
-<link type="text/css" rel="stylesheet"  href="jquery-ui-1.11.4.darkhive/jquery-ui.min.css" />
-<script src="jquery-ui-1.11.4.darkhive/jquery-ui.min.js"></script>  
-<div id="container">
-  <div class="query">
-    <p><span id="contents"></span></p>
-    <!-- Below are samples of cypher query.
-    <textarea id="query">MATCH (a)-[r]->(b:File) WITH r,b ORDER BY b.fileUpdateDate RETURN r LIMIT 100</textarea>
-    <textarea id="query">MATCH p=(a {name:'George Lucas'})--(b)--(c) UNWIND relationships(p) AS x RETURN x ORDER BY b.releaseDate</textarea>
-    <textarea id="query">MATCH (a)-[r]->(b:File) WHERE b.fileUpdateDate > "2015-01-01 00:00:00" WITH r,b ORDER BY b.fileUpdateDate RETURN r LIMIT 100</textarea>
-    -->
-    <textarea id="query">MATCH (a:Author)-[r1]->(b:File)<-[r2]-(c:File) WHERE b.fileUpdateDate > "2017-08-01 00:00:00" UNWIND [r2,r1] AS x WITH b,x ORDER BY b.fileUpdateDate RETURN x LIMIT 1000
-    </textarea>
-  
-    <div>
-      <button id="buttonQ">Send Query</button>
+  <script src="js/three.min.js"></script>
+  <script src="js/TrackballControls.js"></script>
+  <script src="js/d3.v3.min.js"></script>
+  <script src="js/OBJLoader.js"></script>
+  <script src="js/MTLLoader.js"></script>
+  <script src="js/DDSLoader.js"></script>
+  <link type="text/css" href="gitVis3D.css" rel="stylesheet" />
+  <link type="text/css" rel="stylesheet" href="jquery-ui-1.12.1.darkhive/jquery-ui.min.css" />
+  <script src="jquery-ui-1.12.1.darkhive/jquery-ui.min.js"></script>
+  <div id="container">
+    <div class="query">
+      <p><span id="connection"></span></p>
+      <p>Start: <input type="text" class="datepic" id="startDate" /></p>
+      <p> End: <input type="text" class="datepic" id="endDate" /></p>
+      <p>Project: 
+        <select name="project" class="project" id="project">
+          <option value="neo4j/neo4j" selected>neo4j</option>
+          <option value="d3/d3">d3</option>
+          <option value="mrdoob/three.js">three.js</option>
+        </select>
+      </p>
+      <p>Number of edges: <input type="text" class="limit" id="limit" value="1000" /></p>
+    </div>
+
+    <div class="buttonQ">
+      <p><button id="buttonQ">Play</button></p>
+    </div>
+    
+    <div class="speed">
+      <p><span>Speed: </span><span id="speed1"></span></p>
+      <div id="speed"></div>
+    </div>
+
+    <div class="scale">
+      <p><span>Time scale: </span><span id="scale1"></span></p>
+      <div id="scale"></div>
+    </div>
+
+    <div class="buttonA">
+      <p><button id="buttonA">Show propeties(reload)</button></p>
+    </div>
+
+    <div class="edges" id="edgeButtons">
+    </div>
+
+    <div class="nodes" id="nodeButtons">
     </div>
   </div>
 
-  <div class="slider2">
-    <p><span>Animation interval (msec): </span><span id="amount2"></span></p>
-    <div id="slider2"></div>
-  </div>
-  
-  <div class="slider3">
-    <p><span>Time scale: </span><span id="amount3"></span></p>
-    <div id="slider3"></div>
-  </div>
+  <script type="text/javascript">
+    /* global $ */
+    /* global THREE */
+    /* global d3 */
+    /* global io */
 
-  <div class="buttonA">
-    <p><button id="buttonA">Show propeties(reload)</button></p>    
-  </div>
+    $(function() {
 
-  <div class="menu" id="nodeButtons">
-  </div>
-  <div class="menu2" id="edgeButtons">
-  </div>  
-</div>
+      // Graph data
+      var nodes = [];
+      var edges = [];
+      var nodeIDs = {};
+      var edgeIDs = {};
+      var graph = { "nodes": nodes, "edges": edges };
+      var nodeAddingInterval;
+      var selectedProp;
+      var selectedLabel = "File";
 
-<script type="text/javascript">
-/* global $ */
-/* global THREE */
-/* global d3 */
-/* global io */
+      // Socket IO
+      var socket;
 
-$(function() {
+      // D3.js force layout
+      var force;
+      var nametable = {};
+      var links = [];
+      var nodeNumber = 0;
+      var d3nodeCount = 0;
+      var d3nodes = [];
+      var d3edges = [];
 
-  // Graph data
-  var nodes = [];
-  var edges = [];
-  var nodeIDs = {};
-  var edgeIDs = {};
-  var graph = {"nodes":nodes,"edges":edges};
-  var nodeAddingInterval;
-  var selectedProp;
-  var selectedLabel = "File";
-  
-  // Socket IO
-  var socket;
-  
-  // D3.js force layout
-  var force;
-  var nametable = {};
-  var links = [];
-  var nodeNumber = 0;
-  var d3nodeCount = 0;
-  var d3nodes = [];
-  var d3edges = [];
-  
-  // Three.js
-  var notInitialized = true;
-  var scene = new THREE.Scene();
-  var scene2 = new THREE.Scene();
-  var width = window.innerWidth;
-  var height = window.innerHeight;
-  var renderer,camera,controls;
-  var FAR = 20000;
-  
-  var sprites = [];
-  var label1 = [];
-  var glow = [];
+      // Three.js
+      var notInitialized = true;
+      var scene = new THREE.Scene();
+      var scene2 = new THREE.Scene();
+      var width = window.innerWidth;
+      var height = window.innerHeight;
+      var renderer, camera, controls;
+      var FAR = 20000;
 
-  var lines = [];
-  var lineColors = [0xF970E2,0xFFFFFF,0xFF0094,0xA500FF,0x10AAAD,0x8CBE29,0x9C5100,0xE671B5,0xEF9608,0x19A2DE,0xE61400,0x319A31];
-  var usedColors = 0;
-  var edgeTypeColor = {};
-  
-  var currentTime = 0;
-  
-  var yearList = {};
-  var yearMonthList = {};
-  
-  var timeScale;
-  var startDate;
-  
-  var mesh0;
-  var yearPlates = [];
-  var monthPlates = [];
-  
-  var models = {
-    girl:{
-      path:"models/elexis-obj/",
-      mtlfile: "elexis.mtl",
-      objfile: "elexis.obj",
-      scale:23,
-      height:39
-    },
-    boy:{
-      path:"models/Baynes/",
-      mtlfile: "Baynes.mtl",
-      objfile: "Baynes.obj",
-      scale:9.5,
-      height:39
-    },
-    file:{
-      file:"models/file",
-      scale:5,
-      height:12
-    }
-  };
-  
-  // outer glow
-  var loader = new THREE.TextureLoader();
-  var particle = loader.load('Particle01.png');
-    
-  function main() {
-    
-    loadSprites();
-    
-    if (!('WebSocket' in window)) alert("WebSocket is not supported in your browser.");
-    socket = io.connect();
-    
-    socket.on('result', function(relations) {
-      generateGraph(relations);
-      if (notInitialized) {
-        initD3();
-        initThree();
-        notInitialized = false;
-      }
-    });
-  
-    socket.on('node', function(node) {
-      if (node.fileUpdateDate) {
-        var date = new Date(node.fileUpdateDate);
-        var fileUpdateDate = date.getTime()/86400000;
-        if (startDate == undefined) startDate = fileUpdateDate;
-        //if (currentTime < fileUpdateDate - startDate) currentTime = fileUpdateDate - startDate;
+      var sprites = [];
+      var label1 = [];
+      var glow = [];
+
+      var lines = [];
+      var lineColors = [0xF970E2, 0xFFFFFF, 0xFF0094, 0xA500FF, 0x10AAAD, 0x8CBE29, 0x9C5100, 0xE671B5, 0xEF9608, 0x19A2DE, 0xE61400, 0x319A31];
+      var usedColors = 0;
+      var edgeTypeColor = {};
+
+      var currentTime = 0;
+
+      var yearList = {};
+      var yearMonthList = {};
+
+      var timeScale;
+      var startDate;
+
+      var mesh0;
+      var yearPlates = [];
+      var monthPlates = [];
+
+      var models = {
+        girl: {
+          path: "models/elexis-obj/",
+          mtlfile: "elexis.mtl",
+          objfile: "elexis.obj",
+          scale: 23,
+          height: 39
+        },
+        boy: {
+          path: "models/Baynes/",
+          mtlfile: "Baynes.mtl",
+          objfile: "Baynes.obj",
+          scale: 9.5,
+          height: 39
+        },
+        file: {
+          file: "models/file",
+          scale: 5,
+          height: 12
+        }
+      };
+
+      // outer glow
+      var loader = new THREE.TextureLoader();
+      var particle = loader.load('Particle01.png');
+
+      $.datepicker.setDefaults({
+        dateFormat: "yy-mm-dd"
+      });
+
+      $("#startDate").datepicker().datepicker("setDate", new Date());
+      $("#startDate").on("click", function() {
+        $(this).focus();
+      });
+      $("#endDate").datepicker().datepicker("setDate", new Date());
+      $("#endDate").on("click", function() {
+        $(this).focus();
+      });
+      
+      $("#project").on("mouseover", function() {
+        $(this).focus();
+      });
+      
+      $("#limit").on("mouseover", function() {
+        $(this).focus();
+      });
+
+      function main() {
+        loadSprites();
+        if (!('WebSocket' in window)) alert("WebSocket is not supported in your browser.");
+        socket = io.connect();
+
+        socket.on('result', function(relations) {
+          generateGraph(relations);
+          if (notInitialized) {
+            initD3();
+            initThree();
+            notInitialized = false;
+          }
+        });
+
+        socket.on('node', function(node) {
+          if (node.fileUpdateDate) {
+            var date = new Date(node.fileUpdateDate);
+            var fileUpdateDate = date.getTime() / 86400000;
+            if (startDate == undefined) startDate = fileUpdateDate;
+            //if (currentTime < fileUpdateDate - startDate) currentTime = fileUpdateDate - startDate;
+
+            currentTime = fileUpdateDate - startDate;
+
+            var year = date.getFullYear();
+            var month = date.getMonth();
+
+            if (yearList[year] == undefined) {
+              yearList[year] = true;
+              addYearPlate(year);
+            }
+            if (yearMonthList[year + "-" + month] == undefined) {
+              yearMonthList[year + "-" + month] = true;
+              addMonthPlate(year, month);
+            }
+            node.z = currentTime;
+          }
+          if (node.z == undefined) node.z = currentTime; // Assign currentTime temporarily.
+          graph.nodes.push(node);
+        });
+
+        socket.on('mylogin', function(devid) {
+          $("#connection").text("Database connected.");
+        });
+
+        $("#buttonQ").on("click", function() {
+          var startDate = $("#startDate").val();
+          var endDate = $("#endDate").val();
+          var project = $("#project").val();
+          var limit = $("#limit").val();
+
+          var query = `MATCH (a:Author)-[r1]->(b:File)<-[r2]-(c:File) WHERE b.fileUpdateDate >= "${startDate}"  AND b.fileUpdateDate <= "${endDate}" AND b.projectName = "${project}" UNWIND [r2,r1] AS x WITH b,x ORDER BY b.fileUpdateDate RETURN x LIMIT ${limit}`;
+          console.log(query);
+          socket.emit('query', query);
+        });
+
+        $("#buttonA").on("click", function() {
+          generateButtons();
+        });
         
-        currentTime = fileUpdateDate - startDate;
-        
-        var year = date.getFullYear();
-        var month = date.getMonth();
-        
-        if (yearList[year] == undefined) {
-          yearList[year] = true;
-          addYearPlate(year);
-        }
-        if (yearMonthList[year + "-" + month] == undefined) {
-          yearMonthList[year + "-" + month] = true;
-          addMonthPlate(year,month);
-        }
-        node.z = currentTime;
-      }
-      if (node.z == undefined) node.z = currentTime; // Assign currentTime temporarily.
-      graph.nodes.push(node);
-    });
+        $("#speed").slider({
+          range: "min",
+          value: 60,
+          min: 1,
+          max: 60,
+          slide: function(event, ui) {
+            nodeAddingInterval = 1000 / ui.value;
+            $("#speed1").html(ui.value);
+          }
+        });
 
-    socket.on('mylogin', function(devid) {
-      $("#contents").text('Session connected. Your device ID：'+devid);
-    });
-    
-    $("#buttonQ").on("click", function(){
-      socket.emit('query', $("#query").val());
-    });
-        
-    $("#buttonA").on("click", function(){
-      generateButtons();
-    });
+        nodeAddingInterval = $("#speed").slider("value");
+        $("#speed1").html(nodeAddingInterval);
 
-    $("#query").on("click", function() {
-      $(this).focus();
-    });
-    
-    $("#slider2").slider({
-      range: "min",
-      value: 0,
-      min: 0,
-      max: 2000,
-      slide: function(event, ui) {
-        nodeAddingInterval = ui.value;
-        $("#amount2").html(ui.value);
-      }
-    });
-    
-    nodeAddingInterval = $("#slider2").slider("value");
-    $("#amount2").html(nodeAddingInterval);
+        $("#scale").slider({
+          range: "min",
+          value: 2.0,
+          min: 0,
+          max: 100.0,
+          step: 0.1,
+          slide: function(event, ui) {
+            timeScale = ui.value;
+            $("#scale1").html(ui.value);
+            for (let i = 0; i < yearPlates.length; i++) {
+              yearPlates[i].position.y = yearPlates[i].time * timeScale;
+            }
+            for (let i = 0; i < monthPlates.length; i++) {
+              monthPlates[i].position.y = monthPlates[i].time * timeScale;
+            }
+          }
+        });
 
-    $("#slider3").slider({
-      range: "min",
-      value: 2.0,
-      min: 0,
-      max: 50.0,
-      step: 0.1,
-      slide: function(event, ui) {
-        timeScale = ui.value;
-        $("#amount3").html(ui.value);
-        for (let i=0; i<yearPlates.length; i++) {
-          yearPlates[i].position.y = yearPlates[i].time * timeScale;
-        }
-        for (let i=0; i<monthPlates.length; i++) {
-          monthPlates[i].position.y = monthPlates[i].time * timeScale;
-        }
-      }
-    });
+        timeScale = $("#scale").slider("value");
+        $("#scale1").html(timeScale);
 
-    timeScale = $("#slider3").slider("value");
-    $("#amount3").html(timeScale);
-  
-    $("button").button();  // Apply css to the buttons
-  }
-  
-  function generateGraph(result) {
-    if (result.length>0) {
-      if (edgeIDs[result[0].id] == undefined) {
-        edgeIDs[result[0].id] = true;
-        if (result[0].start && result[0].end) {
-          addEdge(result[0]);
-          visEdge(result);
-        }
-      } else {
-          generateGraph(result.slice(1));
+        $("button").button(); // Apply css to the buttons
       }
-    } else {
-      setTimeout(function() {
-        force.stop();
-      }, 10000); // stop FD computation after adding all nodes. 
-    }
-  }
 
-  function visEdge(result) {
-    setTimeout(function() {
-      if (Object.keys(nodeIDs).length == graph.nodes.length) {
-        addLink(result[0]);
-        addLine();
-        force.stop();
-        initD3();
-        addSprites();
-        generateGraph(result.slice(1));
-      } else { 
-        setTimeout(function() { visEdge(result); }, nodeAddingInterval);
-      }
-    }, nodeAddingInterval);
-  }
-  
-  function addEdge(relation) {
-    addNode(relation.start);
-    addNode(relation.end);
-    graph.edges.push(relation);  // Should be called after node data recieved!!!
-  }
-
-  function addNode(id) {
-    if (nodeIDs[id] == undefined) {
-      nodeIDs[id]=id;
-      socket.emit('read',id);
-    }
-  }
-  
-  function generateButtons() {
-    $("#nodeButtons").empty();
-    var labels = {};
-    var props = {};
-    for (let n in graph.nodes){
-      for (let k in Object.keys(graph.nodes[n])) {
-        if (props[Object.keys(graph.nodes[n])[k]]) props[Object.keys(graph.nodes[n])[k]]++; 
-        else props[Object.keys(graph.nodes[n])[k]] = 1;
-      }
-      for (let k in graph.nodes[n].labels) {
-        labels[graph.nodes[n].labels[k]] = true; 
-      }
-    }
-    
-    var dom = $('<p>Node Labels</p>');
-    $("#nodeButtons").append(dom);
-    
-    // Labels Buttons
-    for (let i in Object.keys(labels)) {
-      dom = $('<button id="label'+i+'">'+Object.keys(labels)[i]+'</button>');
-      $("#nodeButtons").append(dom);
-      $(document).on("click","#label"+i, function(e) {
-        selectedLabel = e.currentTarget.textContent;
-        for (var n in graph.nodes) { 
-          if (graph.nodes[n]["labels"] == selectedLabel) {
-            generateGlow(n);
+      function generateGraph(result) {
+        if (result.length > 0) {
+          if (edgeIDs[result[0].id] == undefined) {
+            edgeIDs[result[0].id] = true;
+            if (result[0].start && result[0].end) {
+              addEdge(result[0]);
+              visEdge(result);
+            }
+          }
+          else {
+            generateGraph(result.slice(1));
           }
         }
-      });
-    }
-    
-    dom = $('<button id="buttonG">Clear glow</button>');
-    $("#nodeButtons").append(dom);
-    $("#buttonG").on("click", function(){
-      for (let n in graph.nodes) {
-        if (glow[n]) {
-          scene.remove(glow[n]);
+        else {
+          setTimeout(function() {
+            force.stop();
+          }, 10000); // stop FD computation after adding all nodes. 
         }
       }
-    });
 
-    dom = $('<p>Node Properties</p>');
-    $("#nodeButtons").append(dom);
+      function visEdge(result) {
+        setTimeout(function() {
+          if (Object.keys(nodeIDs).length == graph.nodes.length) {
+            addLink(result[0]);
+            addLine();
+            force.stop();
+            initD3();
+            addSprites();
+            generateGraph(result.slice(1));
+          }
+          else {
+            setTimeout(function() { visEdge(result); }, nodeAddingInterval);
+          }
+        }, nodeAddingInterval);
+      }
 
-    // Properties Buttons
-    for (let i in Object.keys(props)) {
-      dom = $('<button id="prop'+i+'">'+Object.keys(props)[i]+'</button>');
-      $("#nodeButtons").append(dom);
-      $(document).on("click","#prop"+i, function(e) {
-        selectedProp = e.currentTarget.textContent;
-        for (var n in graph.nodes) {
-          graph.nodes[n].label = graph.nodes[n][selectedProp];
+      function addEdge(relation) {
+        addNode(relation.start);
+        addNode(relation.end);
+        graph.edges.push(relation); // Should be called after node data recieved!!!
+      }
+
+      function addNode(id) {
+        if (nodeIDs[id] == undefined) {
+          nodeIDs[id] = id;
+          socket.emit('read', id);
+        }
+      }
+
+      function generateButtons() {
+        $("#nodeButtons").empty();
+        var labels = {};
+        var props = {};
+        for (let n in graph.nodes) {
+          for (let k in Object.keys(graph.nodes[n])) {
+            if (props[Object.keys(graph.nodes[n])[k]]) props[Object.keys(graph.nodes[n])[k]]++;
+            else props[Object.keys(graph.nodes[n])[k]] = 1;
+          }
+          for (let k in graph.nodes[n].labels) {
+            labels[graph.nodes[n].labels[k]] = true;
+          }
+        }
+
+        var dom = $('<p class="label">Node Labels</p>');
+        $("#nodeButtons").append(dom);
+
+        // Labels Buttons
+        for (let i in Object.keys(labels)) {
+          dom = $('<button id="label' + i + '">' + Object.keys(labels)[i] + '</button>');
+          $("#nodeButtons").append(dom);
+          $(document).on("click", "#label" + i, function(e) {
+            selectedLabel = e.currentTarget.textContent;
+            for (var n in graph.nodes) {
+              if (graph.nodes[n]["labels"] == selectedLabel) {
+                generateGlow(n);
+              }
+            }
+          });
+        }
+
+        dom = $('<button id="buttonG">Clear glow</button>');
+        $("#nodeButtons").append(dom);
+        $("#buttonG").on("click", function() {
+          for (let n in graph.nodes) {
+            if (glow[n]) {
+              scene.remove(glow[n]);
+            }
+          }
+        });
+
+        dom = $('<p class="label">Node Properties</p>');
+        $("#nodeButtons").append(dom);
+
+        // Properties Buttons
+        for (let i in Object.keys(props)) {
+          dom = $('<button id="prop' + i + '">' + Object.keys(props)[i] + '</button>');
+          $("#nodeButtons").append(dom);
+          $(document).on("click", "#prop" + i, function(e) {
+            selectedProp = e.currentTarget.textContent;
+            for (var n in graph.nodes) {
+              graph.nodes[n].label = graph.nodes[n][selectedProp];
+              generateLabel(n);
+            }
+          });
+        }
+
+        dom = $('<button id="buttonL">Clear text</button>');
+        $("#nodeButtons").append(dom);
+        $("#buttonL").on("click", function() {
+          for (let n in graph.nodes) {
+            if (label1[n]) scene.remove(label1[n]);
+          }
+        });
+
+        // EdgeButtons
+        $("#edgeButtons").empty();
+
+        dom = $('<p class="label">Edge Types</p>');
+        $("#edgeButtons").append(dom);
+        var edgeTypes = {};
+        for (let e in graph.edges) {
+          edgeTypes[graph.edges[e].type] = false;
+        }
+
+        for (let i in Object.keys(edgeTypes)) {
+          var p = Object.keys(edgeTypes)[i];
+          $("#edgeButtons").append($('<button id="type' + i + '">' + p + '</button>')
+            .css('color', '#' + edgeTypeColor[p].toString(16)));
+          $(document).on("click", "#type" + i, function(e) {
+            for (var n in graph.edges) {
+              if (graph.edges[n].type == e.currentTarget.textContent) {
+                // Click action for the types of edges is future work
+              }
+              // generateLabel(n,e.currentTarget.textContent); // future work
+            }
+          });
+        }
+
+        $("button").button(); // Apply css to the buttons.
+      }
+
+      function addLink(relation) {
+        var start = relation.start;
+        var end = relation.end;
+        var type = relation.type;
+        if (nametable[start] == undefined) nametable[start] = nodeNumber++;
+        if (nametable[end] == undefined) nametable[end] = nodeNumber++;
+
+        if (type == "UPDATE") {
+          if (graph.nodes[nametable[start]].d3node == undefined) {
+            graph.nodes[nametable[start]].d3node = d3nodeCount++;
+            graph.nodes[nametable[start]].color = generateColor();
+            d3nodes.push({ id: graph.nodes[nametable[start]].d3node });
+          }
+
+          // When the end node has already generated by the CONTRIBUTION edge.
+          if (graph.nodes[nametable[end]].d3node) {
+            var edge = {};
+            edge.source = graph.nodes[nametable[end]].d3node;
+            edge.target = graph.nodes[nametable[start]].d3node;
+            d3edges.push(edge);
+          }
+          graph.nodes[nametable[end]].d3node = graph.nodes[nametable[start]].d3node;
+          graph.nodes[nametable[end]].color = graph.nodes[nametable[start]].color;
+        }
+
+        if (type == "CONTRIBUTION") {
+
+          // New Author
+          if (graph.nodes[nametable[start]].d3node == undefined) {
+            graph.nodes[nametable[start]].d3node = d3nodeCount++;
+            graph.nodes[nametable[start]].color = generateColor();
+            d3nodes.push({ id: graph.nodes[nametable[start]].d3node });
+          }
+
+          if (graph.nodes[nametable[end]].d3node == undefined) {
+            // Temporarily assign the d3node and color of the File to those of the Author. These properties will be when UPDATE link is added.
+            graph.nodes[nametable[end]].d3node = graph.nodes[nametable[start]].d3node;
+            graph.nodes[nametable[end]].color = graph.nodes[nametable[start]].color;
+          }
+          else {
+            graph.nodes[nametable[start]].z = graph.nodes[nametable[end]].z;
+            graph.nodes[nametable[start]].fileUpdateDate = graph.nodes[nametable[end]].fileUpdateDate;
+
+            var edge = {};
+            edge.source = graph.nodes[nametable[start]].d3node;
+            edge.target = graph.nodes[nametable[end]].d3node;
+            d3edges.push(edge);
+          }
+        }
+
+        // under constraction
+        var link = {};
+        link.source = nametable[start];
+        link.target = nametable[end];
+        if (edgeTypeColor[type] == undefined) {
+          if (usedColors > 9) edgeTypeColor[type] = generateColor();
+          else edgeTypeColor[type] = lineColors[usedColors++];
+        }
+        link.color = edgeTypeColor[type];
+        links.push(link);
+      }
+
+      function addLine() {
+        var i = links.length - 1;
+        var geometryline = new THREE.Geometry();
+        geometryline.vertices.push(new THREE.Vector3(0, 0, 0));
+        geometryline.vertices.push(new THREE.Vector3(100, 0, 0));
+        var line = new THREE.Line(geometryline,
+          new THREE.LineBasicMaterial({
+            linewidth: 4,
+            color: links[i].color,
+            transparent: true,
+            opacity: 0.5,
+            fog: true
+          }));
+        line.frustumCulled = false;
+        lines.push(line);
+        scene.add(line);
+      }
+
+      function initThree() {
+        camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, FAR);
+        camera.position.set(window.innerWidth / 2, 400, FAR / 8);
+        //camera.lookAt(new THREE.Vector3(0,0,0));
+
+        renderer = new THREE.WebGLRenderer();
+        renderer.setClearColor(0x101010);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.gammaInput = true;
+        renderer.gammaOutput = true;
+        renderer.autoClear = false;
+
+        document.body.appendChild(renderer.domElement);
+        
+        //controls = new THREE.TrackballControls(camera);
+        controls = new THREE.TrackballControls(camera, renderer.domElement);
+        controls.addEventListener('change', render);
+
+        var alight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(alight);
+
+        var dirLight = new THREE.DirectionalLight(0xffffff, 0.3);
+        dirLight.color.setHSL(0.1, 1, 0.95);
+        dirLight.position.set(-1, 1.75, 1);
+        dirLight.position.multiplyScalar(30);
+        scene.add(dirLight);
+
+        scene.fog = new THREE.Fog(0x101010, 10, FAR);
+        
+        renderLoop();
+      }
+
+      function loadSprites() {
+        // Default Sprite for high speed rendering
+        var geometry = new THREE.PlaneBufferGeometry(1.0, 1.0);
+        var material = new THREE.MeshBasicMaterial({
+          transparent: true,
+          opacity: 0.0
+        });
+        mesh0 = new THREE.Mesh(geometry, material);
+
+        THREE.Loader.Handlers.add(/\.dds$/i, new THREE.DDSLoader());
+        function objmtlLoader(model) {
+          var mtlLoader = new THREE.MTLLoader();
+          mtlLoader.setPath(model.path);
+          mtlLoader.load(model.mtlfile, function(materials) {
+            materials.preload();
+            var objLoader = new THREE.OBJLoader();
+            objLoader.setMaterials(materials);
+            objLoader.setPath(model.path);
+            objLoader.load(model.objfile, function(mesh) {
+              mesh.scale.set(model.scale, model.scale, model.scale);
+              model.mesh = mesh;
+            });
+          });
+        }
+
+        objmtlLoader(models.boy);
+        objmtlLoader(models.girl);
+
+        /* 3D Model for a file -- Simple Sphere */
+        geometry = new THREE.SphereGeometry(3.0, 8, 8);
+
+        material = new THREE.MeshPhongMaterial({
+          emissiveIntensity: 0.5
+        });
+
+        models.file.mesh = new THREE.Mesh(geometry, material);
+      }
+
+      function addSprites() {
+        for (let n = sprites.length; n < graph.nodes.length; n++) {
+
+          if (graph.nodes[n].labels.indexOf('Author') >= 0) {
+            sprites[n] = models.boy.mesh.clone();
+            graph.nodes[n].height = models.boy.height;
+            if (selectedLabel == "Author") generateGlow(n);
+          }
+          else if (graph.nodes[n].labels.indexOf('File') >= 0) {
+            sprites[n] = models.file.mesh.clone();
+            graph.nodes[n].height = models.file.height;
+            if (selectedLabel == "File") generateGlow(n);
+          }
+          else {
+            sprites[n] = models.file.mesh.clone(); // Default model
+            graph.nodes[n].height = models.file.height;
+          }
+
+          if (graph.nodes[n].color && sprites[n].material) {
+            sprites[n].material = sprites[n].material.clone();
+            sprites[n].material.color = new THREE.Color(graph.nodes[n].color);
+            sprites[n].material.emissive = new THREE.Color(graph.nodes[n].color);
+            sprites[n].material.needsUpdate = true;
+          }
+
+          scene.add(sprites[n]);
+
+          // Put a label the the sprites
+          if (graph.nodes[n][selectedProp]) {
+            graph.nodes[n].label = graph.nodes[n][selectedProp];
+          }
+          else if (graph.nodes[n]["authorName"]) {
+            graph.nodes[n].label = graph.nodes[n]["authorName"];
+          }
+          else if (graph.nodes[n]["fileName"]) {
+            graph.nodes[n].label = graph.nodes[n]["fileName"];
+          }
+
           generateLabel(n);
         }
-      });
-    }
-    
-    dom = $('<button id="buttonL">Clear text</button>');
-    $("#nodeButtons").append(dom);
-    $("#buttonL").on("click", function(){
-      for (let n in graph.nodes) {
-        if (label1[n]) scene.remove(label1[n]);
       }
-    });
 
-    // EdgeButtons
-    $("#edgeButtons").empty();
+      function generateGlow(n) {
+        if (sprites[n] != undefined && graph.nodes[n].color != undefined) {
+          if (glow[n]) scene.remove(glow[n]);
+          var material = new THREE.SpriteMaterial({
+            map: particle,
+            color: graph.nodes[n].color,
+            blending: THREE.AdditiveBlending,
+            opacity: 0.25,
+            transparent: true
+          });
 
-    dom = $('<p>Edge Types</p>');
-    $("#edgeButtons").append(dom);
-    var edgeTypes = {};
-    for (let e in graph.edges) {
-      edgeTypes[graph.edges[e].type] = false;
-    }
-    
-    for (let i in Object.keys(edgeTypes)) {
-      var p = Object.keys(edgeTypes)[i];
-      $("#edgeButtons").append($('<button id="type'+i+'">'+p+'</button>')
-        .css('color','#' + edgeTypeColor[p].toString(16)));
-      $(document).on("click","#type"+i, function(e) {
-        for (var n in graph.edges) {
-          if (graph.edges[n].type == e.currentTarget.textContent) {
-            // Click action for the types of edges is future work
-          }
-          // generateLabel(n,e.currentTarget.textContent); // future work
+          glow[n] = new THREE.Sprite(material);
+          glow[n].scale.multiplyScalar(graph.nodes[n].height * 4.0);
+          scene.add(glow[n]);
         }
-      });
-    }
-    
-    $("button").button(); // Apply css to the buttons.
-  }
-  
-  function addLink(relation) {
-    var start = relation.start;
-    var end = relation.end;
-    var type = relation.type;
-    if (nametable[start] == undefined) nametable[start] = nodeNumber++;
-    if (nametable[end] == undefined) nametable[end] = nodeNumber++;
-    
-    if (type=="UPDATE") {
-      if (graph.nodes[nametable[start]].d3node == undefined) {
-        graph.nodes[nametable[start]].d3node = d3nodeCount++;
-        graph.nodes[nametable[start]].color = generateColor() ;
-        d3nodes.push({id:graph.nodes[nametable[start]].d3node});
-      } 
-      
-      // When the end node has already generated by the CONTRIBUTION edge.
-      if (graph.nodes[nametable[end]].d3node) {
-        var edge = {};
-        edge.source = graph.nodes[nametable[end]].d3node;
-        edge.target = graph.nodes[nametable[start]].d3node;
-        d3edges.push(edge);
-      }
-      graph.nodes[nametable[end]].d3node = graph.nodes[nametable[start]].d3node;
-      graph.nodes[nametable[end]].color = graph.nodes[nametable[start]].color;
-    }
-    
-    if (type=="CONTRIBUTION") {
-      
-      // New Author
-      if (graph.nodes[nametable[start]].d3node == undefined) {
-        graph.nodes[nametable[start]].d3node = d3nodeCount++;
-        graph.nodes[nametable[start]].color = generateColor();
-        d3nodes.push({id:graph.nodes[nametable[start]].d3node});
       }
 
-      if (graph.nodes[nametable[end]].d3node == undefined) {
-        // Temporarily assign the d3node and color of the File to those of the Author. These properties will be when UPDATE link is added.
-        graph.nodes[nametable[end]].d3node = graph.nodes[nametable[start]].d3node;
-        graph.nodes[nametable[end]].color = graph.nodes[nametable[start]].color;
-      } else {
-        graph.nodes[nametable[start]].z = graph.nodes[nametable[end]].z;
-        graph.nodes[nametable[start]].fileUpdateDate = graph.nodes[nametable[end]].fileUpdateDate;
-        
-        var edge = {};
-        edge.source = graph.nodes[nametable[start]].d3node;
-        edge.target = graph.nodes[nametable[end]].d3node;
-        d3edges.push(edge);
+      function generateLabel(n) {
+        // Draw the text in a canvas to generate label for the node n.
+        if (sprites[n] != undefined && graph.nodes[n].label != undefined) {
+          if (label1[n]) scene.remove(label1[n]);
+          var canvas = document.createElement('canvas');
+          var text = graph.nodes[n].label;
+          var textLength = String(text).length;
+          if (textLength > 29) {
+            text = "..." + text.substring(textLength - 29);
+            textLength = 32;
+          }
+          canvas.width = textLength * 16;
+          /*
+          if (textLength<=32) canvas.width = 512;
+          if (textLength<=16) canvas.width = 256;
+          if (textLength<=8) canvas.width = 128;
+          if (textLength<=4) canvas.width = 64;
+          */
+          canvas.height = 32;
+          var ctx = canvas.getContext('2d');
+          ctx.fillStyle = 'rgba(0,255,255,0.2)'; //graph.nodes[n].color;
+          ctx.fillRect(0, 0, canvas.width, 32);
+          ctx.font = "28px sans-serif";
+          ctx.textAlign = 'center';
+          ctx.fillStyle = 'rgb(255,255,255)'; //graph.nodes[n].color;
+          ctx.fillText(text, canvas.width / 2, 30, canvas.width);
+          var texture = new THREE.Texture(canvas);
+          texture.needsUpdate = true;
+          var material = new THREE.SpriteMaterial({
+            transparent: true,
+            map: texture
+          });
+          label1[n] = new THREE.Sprite(material);
+          label1[n].scale.set(canvas.width / 4, canvas.height / 4, 1);
+
+          scene.add(label1[n]);
+        }
       }
-    }
-    
-    // under constraction
-    var link = {};
-    link.source = nametable[start];
-    link.target = nametable[end];
-    if (edgeTypeColor[type] == undefined) {
-      if (usedColors>9) edgeTypeColor[type] = generateColor();
-      else edgeTypeColor[type] = lineColors[usedColors++];      
-    }
-    link.color = edgeTypeColor[type];
-    links.push(link);
-  }
 
-  function addLine() {  
-    var i = links.length - 1;
-    var geometryline = new THREE.Geometry();
-    geometryline.vertices.push( new THREE.Vector3(0,0,0));
-    geometryline.vertices.push( new THREE.Vector3(100,0,0));
-    var line = new THREE.Line( geometryline, 
-               new THREE.LineBasicMaterial({ 
-                 linewidth:4,
-                 color: links[i].color, 
-                 transparent:true,
-                 opacity:0.5,
-                 // scale: 1,
-                 // dashSize: 9,
-                 // gapSize: 3,
-                 // lights: true,
-                 fog: true
-                 }));
-    line.frustumCulled = false;
-    lines.push(line);
-    scene.add(line);
-  }
+      function addYearPlate(year) {
+        var canvas = document.createElement('canvas');
+        var textWidth = 10 * 160; // px
+        canvas.width = 5000;
+        canvas.height = 5000;
+        var ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'rgba(0,255,255,0.08)';
+        ctx.fillRect(0, 0, 5000, 5000);
+        ctx.font = "280px sans-serif";
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgb(255,255,255)';
+        ctx.fillText(year, canvas.width / 2, canvas.height - 200, textWidth);
+        var texture = new THREE.Texture(canvas);
+        texture.needsUpdate = true;
 
-  function initThree() {
-    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, FAR);
-    camera.position.set(window.innerWidth/2, 400, FAR/8);
-    //camera.lookAt(new THREE.Vector3(0,0,0));
-    controls = new THREE.TrackballControls(camera);
-    
-    renderer = new THREE.WebGLRenderer();
-    // renderer.setSize(width, height);
-    renderer.setClearColor(0x101010);
-    // Added for standard materials
-		renderer.setPixelRatio( window.devicePixelRatio );
-		renderer.setSize( window.innerWidth, window.innerHeight );
-		renderer.shadowMap.enabled = true;
-		renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-		renderer.gammaInput = true;
-		renderer.gammaOutput = true;
-		renderer.autoClear = false;
-    
-    document.body.appendChild(renderer.domElement);
-
-    var alight = new THREE.AmbientLight(0xffffff,0.7);
-    scene.add(alight);
-
-    var dirLight = new THREE.DirectionalLight(0xffffff, 0.3);
-		dirLight.color.setHSL(0.1, 1, 0.95);
-		dirLight.position.set(-1, 1.75, 1);
-	  dirLight.position.multiplyScalar(30);
-	  scene.add(dirLight);
-
-    scene.fog = new THREE.Fog(0x101010, 10, FAR);
-    
-    renderLoop();
-  }
-  
-  function loadSprites() {      
-    // Default Sprite for high speed rendering
-    var geometry = new THREE.PlaneBufferGeometry(1.0,1.0);        
-    var material = new THREE.MeshBasicMaterial({
-      transparent: true,
-      opacity: 0.0
-    });
-    mesh0 = new THREE.Mesh(geometry,material);
-    
-    // --- New Loader ----
-    THREE.Loader.Handlers.add( /\.dds$/i, new THREE.DDSLoader() );
-    
-    function objmtlLoader (model) {
-      var mtlLoader = new THREE.MTLLoader();
-      mtlLoader.setPath(model.path);
-      mtlLoader.load(model.mtlfile, function( materials ) {
-        materials.preload();
-        var objLoader = new THREE.OBJLoader();
-        objLoader.setMaterials( materials );
-        objLoader.setPath(model.path);
-        objLoader.load(model.objfile, function ( mesh ) {
-          mesh.scale.set(model.scale,model.scale,model.scale);
-          model.mesh = mesh;
+        var yearPlateMaterial = new THREE.MeshBasicMaterial({
+          side: THREE.DoubleSide,
+          transparent: true,
+          map: texture
         });
-      });
-    }
-    
-    objmtlLoader(models.boy);
-    objmtlLoader(models.girl);
-    
 
-    /* 3D Model for a file -- Simple Sphere */
-    geometry = new THREE.SphereGeometry(3.0,8,8);
-    
-    material = new THREE.MeshPhongMaterial({
-        //color: 0xFF00FF,
-        //emissive: 0xFF00FF,
-        emissiveIntensity: 0.5
-    });
-    
-    models.file.mesh = new THREE.Mesh(geometry,material);
-  }
+        var yearPlate = new THREE.Mesh(new THREE.PlaneBufferGeometry(5000, 5000), yearPlateMaterial);
+        var plateTime = (new Date(year, 0, 0, 0, 0)).getTime() / 86400000 - startDate;
 
-  function addSprites() {
-    for (let n=sprites.length; n<graph.nodes.length; n++) {
-      
-      if (graph.nodes[n].labels.indexOf('Author') >= 0) {
-        sprites[n] = models.boy.mesh.clone();
-        graph.nodes[n].height = models.boy.height;
-        if (selectedLabel == "Author") generateGlow(n);
-      } else if (graph.nodes[n].labels.indexOf('File') >= 0) {
-        sprites[n] = models.file.mesh.clone();
-        graph.nodes[n].height = models.file.height;
-        if (selectedLabel == "File") generateGlow(n);
-      } else {
-        sprites[n] = models.file.mesh.clone(); // Default model
-        graph.nodes[n].height = models.file.height; 
+        yearPlate.position.x = width / 2;
+        yearPlate.position.y = plateTime * timeScale;
+        yearPlate.position.z = 0;
+        yearPlate.rotation.set(-Math.PI / 2, 0, 0);
+        yearPlate.frustumCulled = false;
+        yearPlate.time = plateTime;
+        scene2.add(yearPlate);
+        yearPlates.push(yearPlate);
       }
-      
-      if (graph.nodes[n].color && sprites[n].material) {
-        sprites[n].material = sprites[n].material.clone();
-        sprites[n].material.color = new THREE.Color(graph.nodes[n].color);
-        sprites[n].material.emissive = new THREE.Color(graph.nodes[n].color);
-        sprites[n].material.needsUpdate = true;
+
+      function addMonthPlate(year, month) {
+        var monthPadding = "";
+        if (month < 9) monthPadding = "0";
+        var yearMonth = year + "-" + monthPadding + (month + 1);
+
+        var canvas = document.createElement('canvas');
+        var textWidth = 7 * 32; // px
+        canvas.width = 128;
+        canvas.height = 32;
+        var ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.fillRect(0, 0, 128, 32);
+        ctx.font = "28px sans-serif";
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgb(0,0,0)';
+        ctx.fillText(yearMonth, canvas.width / 2, canvas.height - 5, textWidth);
+        var texture = new THREE.Texture(canvas);
+        texture.needsUpdate = true;
+
+        var monthPlateMaterial = new THREE.MeshBasicMaterial({
+          side: THREE.DoubleSide,
+          transparent: true,
+          map: texture
+        });
+
+        var monthPlate = new THREE.Mesh(new THREE.PlaneBufferGeometry(64, 16), monthPlateMaterial);
+        var plateTime = (new Date(year, month, 0, 0, 0)).getTime() / 86400000 - startDate;
+
+        monthPlate.position.x = width / 2;
+        monthPlate.position.y = plateTime * timeScale;
+        monthPlate.position.z = 0;
+        //monthPlate.rotation.set(-Math.PI/2,0,0);
+        monthPlate.frustumCulled = false;
+        monthPlate.time = plateTime;
+        scene.add(monthPlate);
+        monthPlates.push(monthPlate);
       }
-      
-      scene.add(sprites[n]);
-      
-      // Put a label the the sprites
-      if (graph.nodes[n][selectedProp]) {
-        graph.nodes[n].label = graph.nodes[n][selectedProp];
-      } else if (graph.nodes[n]["authorName"]) {
-        graph.nodes[n].label = graph.nodes[n]["authorName"];
-      } else if (graph.nodes[n]["fileName"]) {
-        graph.nodes[n].label = graph.nodes[n]["fileName"];
+
+      function renderLoop() {
+        requestAnimationFrame(renderLoop);
+        controls.update();
+        force.tick();
+        for (let n = 0; n < sprites.length; n++) {
+          sprites[n].position.x = d3nodes[graph.nodes[n].d3node].x;
+          sprites[n].position.y = graph.nodes[n].z * timeScale;
+          sprites[n].position.z = d3nodes[graph.nodes[n].d3node].y;
+          if (label1[n]) {
+            label1[n].position.x = d3nodes[graph.nodes[n].d3node].x;
+            label1[n].position.y = sprites[n].position.y + graph.nodes[n].height;
+            label1[n].position.z = d3nodes[graph.nodes[n].d3node].y;
+          }
+          if (glow[n]) {
+            glow[n].position.x = d3nodes[graph.nodes[n].d3node].x;
+            glow[n].position.y = sprites[n].position.y;
+            glow[n].position.z = d3nodes[graph.nodes[n].d3node].y;
+          }
+        }
+
+        for (let j = 0; j < lines.length; j++) {
+          lines[j].geometry.vertices[0].x = d3nodes[graph.nodes[links[j].source].d3node].x;
+          lines[j].geometry.vertices[0].y = graph.nodes[links[j].source].z * timeScale;
+          lines[j].geometry.vertices[0].z = d3nodes[graph.nodes[links[j].source].d3node].y;
+          lines[j].geometry.vertices[1].x = d3nodes[graph.nodes[links[j].target].d3node].x;
+          lines[j].geometry.vertices[1].y = graph.nodes[links[j].target].z * timeScale;
+          lines[j].geometry.vertices[1].z = d3nodes[graph.nodes[links[j].target].d3node].y;
+
+          lines[j].geometry.verticesNeedUpdate = true;
+        }
+
+        render();
       }
-      
-      generateLabel(n);
-    }
-  }
 
-  function generateGlow(n) {
-    if (sprites[n] != undefined && graph.nodes[n].color != undefined) {
-      if (glow[n]) scene.remove(glow[n]);
-      var material = new THREE.SpriteMaterial({
-        map: particle,
-        color: graph.nodes[n].color,
-        blending: THREE.AdditiveBlending,
-        opacity: 0.25,
-        transparent: true
-      });
-      
-      glow[n] = new THREE.Sprite(material);
-      glow[n].scale.multiplyScalar(graph.nodes[n].height * 4.0);
-      scene.add(glow[n]);
-    }
-  }
-
-  function generateLabel(n) {
-    // Draw the text in a canvas to generate label for the node n.
-    if (sprites[n] != undefined && graph.nodes[n].label != undefined) {
-      if (label1[n]) scene.remove(label1[n]);
-      var canvas = document.createElement('canvas');
-      var text = graph.nodes[n].label;
-      var textLength = String(text).length;
-      if (textLength > 29) {
-        text = "..." + text.substring(textLength - 29);
-        textLength = 32;
+      function render() {
+        renderer.render(scene, camera);
+        renderer.clearDepth();
+        renderer.render(scene2, camera);
       }
-      canvas.width = textLength * 16;
-      /*
-      if (textLength<=32) canvas.width = 512;
-      if (textLength<=16) canvas.width = 256;
-      if (textLength<=8) canvas.width = 128;
-      if (textLength<=4) canvas.width = 64;
-      */
-      canvas.height = 32;
-      var ctx = canvas.getContext('2d');
-      ctx.fillStyle = 'rgba(0,255,255,0.2)'; //graph.nodes[n].color;
-      ctx.fillRect(0,0,canvas.width,32);
-      ctx.font = "28px sans-serif";
-      ctx.textAlign = 'center';
-      ctx.fillStyle = 'rgb(255,255,255)'; //graph.nodes[n].color;
-      ctx.fillText(text, canvas.width/2, 30, canvas.width);
-      var texture = new THREE.Texture(canvas);
-      texture.needsUpdate = true;
-      var material = new THREE.SpriteMaterial({
-        transparent:true,
-        map: texture
-      });
-      label1[n] = new THREE.Sprite(material);
-      label1[n].scale.set(canvas.width/4,canvas.height/4,1);  
-      
-      scene.add(label1[n]);
-    }
-  }
-  
-  function addYearPlate (year) {
-    var canvas = document.createElement('canvas');
-    var textWidth = 10 * 160; // px
-    canvas.width = 5000; canvas.height = 5000;
-    var ctx = canvas.getContext('2d');
-    ctx.fillStyle = 'rgba(0,255,255,0.08)';
-    ctx.fillRect(0,0,5000,5000);
-    ctx.font = "280px sans-serif";
-    ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgb(255,255,255)';
-    ctx.fillText(year, canvas.width/2, canvas.height - 200, textWidth);
-    var texture = new THREE.Texture(canvas);
-    texture.needsUpdate = true;
-    
-    var yearPlateMaterial = new THREE.MeshBasicMaterial({
-      side: THREE.DoubleSide,
-      transparent: true,
-      map: texture
-    });
 
-    var yearPlate = new THREE.Mesh( new THREE.PlaneBufferGeometry(5000, 5000), yearPlateMaterial );
-    var plateTime = (new Date(year,0,0,0,0)).getTime()/86400000 - startDate;
-
-    yearPlate.position.x = width/2;
-    yearPlate.position.y = plateTime * timeScale;
-    yearPlate.position.z = 0;
-    yearPlate.rotation.set(-Math.PI/2,0,0);
-    yearPlate.frustumCulled = false;
-    yearPlate.time = plateTime;
-    scene2.add(yearPlate);
-    yearPlates.push(yearPlate);
-  }
-
-  function addMonthPlate (year,month) {
-    var monthPadding = "";
-    if (month < 9) monthPadding = "0";
-    var yearMonth = year + "-" + monthPadding + (month+1);
-
-    var canvas = document.createElement('canvas');
-    var textWidth = 7 * 32; // px
-    canvas.width = 128; canvas.height = 32;
-    var ctx = canvas.getContext('2d');
-    ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    ctx.fillRect(0,0,128,32);
-    ctx.font = "28px sans-serif";
-    ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgb(0,0,0)';
-    ctx.fillText(yearMonth, canvas.width/2, canvas.height - 5, textWidth);
-    var texture = new THREE.Texture(canvas);
-    texture.needsUpdate = true;
-    
-    var monthPlateMaterial = new THREE.MeshBasicMaterial({
-      side: THREE.DoubleSide,
-      transparent: true,
-      map: texture
-    });
-
-    var monthPlate = new THREE.Mesh( new THREE.PlaneBufferGeometry(64, 16), monthPlateMaterial );
-    var plateTime = (new Date(year,month,0,0,0)).getTime()/86400000 - startDate;
-    
-    monthPlate.position.x = width/2;
-    monthPlate.position.y = plateTime * timeScale;
-    monthPlate.position.z = 0;
-    //monthPlate.rotation.set(-Math.PI/2,0,0);
-    monthPlate.frustumCulled = false;
-    monthPlate.time = plateTime;
-    scene.add(monthPlate);
-    monthPlates.push(monthPlate);
-  }
-
-  function renderLoop () {
-    requestAnimationFrame( renderLoop );
-    controls.update(); 
-    force.tick();
-    for (let n=0; n<sprites.length; n++) {
-      sprites[n].position.x = d3nodes[graph.nodes[n].d3node].x;
-      sprites[n].position.y = graph.nodes[n].z * timeScale;
-      sprites[n].position.z = d3nodes[graph.nodes[n].d3node].y;
-      if (label1[n]) {
-        label1[n].position.x = d3nodes[graph.nodes[n].d3node].x;
-        label1[n].position.y = sprites[n].position.y + graph.nodes[n].height;
-        label1[n].position.z = d3nodes[graph.nodes[n].d3node].y;
+      // Force-directed layout by D3.js
+      function initD3() {
+        var width = window.innerWidth;
+        var height = window.innerHeight;
+        force = d3.layout.force()
+          .nodes(d3nodes)
+          .links(d3edges)
+          .size([width, height])
+          .gravity(0.1)
+          .charge([-150]) // was -100 :repulsion force between nodes
+          .friction(0.95)
+          .linkDistance([140]) // was 70
+          .linkStrength(1);
+        force.start();
       }
-      if (glow[n]) {
-        glow[n].position.x = d3nodes[graph.nodes[n].d3node].x;
-        glow[n].position.y = sprites[n].position.y;
-        glow[n].position.z = d3nodes[graph.nodes[n].d3node].y;
+
+      function generateColor() {
+        var color = new THREE.Color();
+        color.setHSL(Math.random(), 0.5, 0.5);
+        return color.getHex();
       }
-    }
-  
-    for (let j=0; j<lines.length; j++){
-      lines[j].geometry.vertices[0].x = d3nodes[graph.nodes[links[j].source].d3node].x;
-      lines[j].geometry.vertices[0].y = graph.nodes[links[j].source].z * timeScale;
-      lines[j].geometry.vertices[0].z = d3nodes[graph.nodes[links[j].source].d3node].y;
-      lines[j].geometry.vertices[1].x = d3nodes[graph.nodes[links[j].target].d3node].x;
-      lines[j].geometry.vertices[1].y = graph.nodes[links[j].target].z * timeScale;
-      lines[j].geometry.vertices[1].z = d3nodes[graph.nodes[links[j].target].d3node].y;
-      
-      lines[j].geometry.verticesNeedUpdate = true;
-    }
-    // camera.position.set(window.innerWidth/2, currentTime + 400, FAR/8);
-    // camera.lookAt(new THREE.Vector3(0,currentTime,0));    
-    
-    render();    
-  }
-  
-  function render() {
-    renderer.render(scene, camera);
-    renderer.clearDepth();
-    renderer.render(scene2,camera);
-  }
 
-  // Force-directed layout by D3.js
-  function initD3() {
-    var width = window.innerWidth;
-    var height = window.innerHeight;
-    force = d3.layout.force()
-        .nodes(d3nodes)
-        .links(d3edges)
-        .size([width,height])
-        .gravity(0.1)
-        .charge([-150])  // was -100 :repulsion force between nodes
-        .friction(0.95) 
-        .linkDistance([140]) // was 70
-        .linkStrength(1);
-    force.start();
-  }
-  
-  function generateColor () {
-    var color = new THREE.Color();
-    color.setHSL(Math.random(),0.5,0.5);
-    return color.getHex();
-  }
+      main();
 
-  main();
+    }); // End of $(function (){
+  </script>
 
-}); // End of $(function (){
-
-</script>
- 
 </body>
+
 </html>

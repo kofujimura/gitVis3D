@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>
+        <%= title %>
+    </title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+</head>
+
+<body>
+    <!--    <h1><%= title %></h1>-->
+    <h1>github api のアカウント情報を入力してください</h1>
+    <table>
+        <tr>
+            <td>username:</td>
+            <td>
+                <input type="text" id='name'>
+            </td>
+        </tr>
+        <tr>
+            <td>password:</td>
+            <td>
+                <input type="password" id='pass'>
+            </td>
+        </tr>
+        <tr>
+            <td>プロジェクトを選択してください</td>
+            <td>
+                <select name="project" id="project">
+                    <option value="neo4j/neo4j" selected>neo4j</option>
+                    <option value="d3/d3">d3</option>
+                    <option value="MidnightCommander/mc">MidnightCommander</option>
+                    <option value="mrdoob/three.js">three.js</option>
+                </select>
+            </td>
+        </tr>        <tr>
+            <td>検索するコミット数の目安</td>
+            <td>
+                <select name="commitlimit" id="commitlimit">
+                    <option value="25" selected>25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="200">200</option>
+                    <option value="300">300</option>
+                    <option value="400">400</option>
+                    <option value="500">500</option>
+                    <option value="1000">1000</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>１コミット当たりにファイルツリーを検索する回数の最大値</td>
+            <td>
+                <select name="accesslimit" id="accesslimit">
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5" selected>5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>１コミット当たりに検索するファイルツリーの深さの最大値</td>
+            <td>
+                <select name="depthlimit" id="depthlimit">
+                    <option value="2" selected>2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                </select>
+            </td>
+        </tr>        <tr>
+            <td>
+                <input type="submit" id='trigger' value="送信">
+            </td>
+        </tr>
+    </table>
+    <p>
+        残りアクセス数：<span id="accessRemaining"></span>
+    </p>
+    <script>
+        $("#trigger").on("click", function () {
+            var name = $("#name").val();
+            var pass = $("#pass").val();
+            var project = $("#project").val();
+            var commitlimit = $("#commitlimit").val();
+            var accesslimit = $("#accesslimit").val();
+            var depthlimit = $("#depthlimit").val();
+
+            //            $.getJSON("http://localhost:3000/getdata", {
+            //                name: name,
+            //                mail: mail
+            //            }, function (res) {
+            //                console.log(res);
+            //                $("#result").text('success');
+            //            });
+            var request = $.ajax({
+                type: 'POST',
+                url: 'https://gitvis3d-kofujimura.c9users.io/getdata',  // changed fujimura
+                datatype: 'json',
+                data: {
+                    'name': name,
+                    'pass': pass,
+                    'project': project,
+                    'commitlimit': commitlimit,
+                    'accesslimit': accesslimit,
+                    'depthlimit': depthlimit
+                },
+                timeout: 0
+            });
+            request.done(function (data) {
+                console.log(data);
+                $("#accessRemaining").text(data.accessRemaining);
+            })
+            request.fail(function () {
+                console.log('失敗');
+            })
+            request.always(function (data) {
+                //                alert('finish');
+            })
+        });
+    </script>
+
+</body>
+
+</html>
