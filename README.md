@@ -7,7 +7,7 @@ This is a branch of [CypherVis3D](https://github.com/kofujimura/cypherVis3D).
 to be supplied.
 
 ## Live demo
-to be supplied.
+http://qa.fujimura.com:8080/gitVis3D.html
 
 ## How to install
 
@@ -29,43 +29,14 @@ to be supplied.
 
 1. Store data into Neo4j.
 
-clone a git repository which you want to be visualized.
-   ```bash
-   git clone ...
-   ```
+start nodejs githubAPI server. 
 
-create a git commit log file:
    ```bash
-   git log --stat --date=iso -1000 > log.txt
+   $ node githubAPIServer3000.js
    ```
+get git commit logs from github repository via http://localhost:3000/input.
+
    
-create csv files using the script below. Note that the input file name must be "log.txt".
-   ```bash
-   pyhton3 gitlogConvertToNeo4jData.py
-   ```
-
-move the created following files to the neo4j import folder.
-  - author_file_relation.csv
-  - author_node.csv
-  - file_file_relation.csv
-  - file_node.csv
-
-start neo4j:
-   ```bash
-   sudo neo4j start
-   ```
-
-import them to the neo4j:
-   ```
-   LOAD CSV WITH HEADERS FROM "file:///author_node.csv" AS csvLine CREATE (n: Author {authorId:csvLine.author_id, authorName:csvLine.author_name, authorMail:csvLine.author_mail } );
-
-   LOAD CSV WITH HEADERS FROM "file:///file_node.csv" AS csvLine CREATE (n: File {fileId:csvLine.file_id, fileName:csvLine.file_name, fileUpdateDate:csvLine.file_update_date } );
-
-   LOAD CSV WITH HEADERS FROM "file:///file_file_relation.csv" AS csvLine MATCH (m:File), (n:File) WHERE m.fileId = csvLine.old_file_id AND n.fileId = csvLine.new_file_id CREATE  (m)-[r:UPDATE]->(n);
-
-   LOAD CSV WITH HEADERS FROM "file:///author_file_relation.csv" AS csvLine MATCH (m:Author), (n:File) WHERE m.authorId = csvLine.author_id AND n.fileId = csvLine.file_id CREATE (m)-[r:CONTRIBUTION]->(n);
-   ```
-
 2. Start web server
 
 set password to access Neo4j via http://localhost:7474 and edit cypherVis3DWebServer8080.js to set the password.
@@ -77,7 +48,7 @@ start nodejs web server:
    
 3. Access http://localhost:8080/gitVis3D.html
 
-4. Run (input Cypher Query)
+4. Run
 
 ## Licence
 
