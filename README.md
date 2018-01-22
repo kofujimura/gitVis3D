@@ -4,7 +4,7 @@ GitVis3D is a visualization tool for git communities.
 This is a branch of [CypherVis3D](https://github.com/kofujimura/cypherVis3D).
 
 ## Demo movie
-to be supplied.
+https://www.youtube.com/watch?v=67s8WCEjIx8
 
 ## Live demo
 http://qa.fujimura.com:8080/gitVis3D.html
