@@ -4,7 +4,7 @@ that consists of contribution edges and update edges as 3D animation in which ne
 are added to the scene over time. 
 
 The basic idea of the visualizing method of the versioning graph in 3D space is shown as follows:
-![3D Layout of Versioning Graph](README-Fig2.png).
+<img src="README-Fig2.png" align="center" width="50%">
 
 This tool also contains a funciton that automatically creates a versioning graph from commit logs 
 retrieved from the GitHub repository via [GitHub API](https://developer.github.com/). 
@@ -19,7 +19,9 @@ http://qa.fujimura.com:8080/gitVis3D.html
 
 ## How to install
 
-1. Install [Neo4j](http://neo4j.org)
+1. Install [Neo4j](https://developer.github.com/)
+
+   set password to access Neo4j via http://localhost:7474.
 
 2. Install JavaScript modules:
    ```bash
@@ -35,23 +37,26 @@ http://qa.fujimura.com:8080/gitVis3D.html
    npm install seraph
    ```
 
-## How to use
+## How to get commit logs from a github repository
 
-1. Store data into Neo4j.
+1. Edit password to access Neo4j in routes/getdata.js.
 
-### start nodejs githubAPI server. 
-
+2. Start nodejs github API server. 
+ 
    ```bash
    $ node githubAPIServer3000.js
    ```
-### get git commit logs from github repository via http://localhost:3000/input.
-
    
-2. Start web server
+3. Access http://localhost:3000/input.
 
-### set password to access Neo4j via http://localhost:7474 and edit cypherVis3DWebServer8080.js to set the password.
+4. Input forms
 
-### start nodejs web server:
+## How to run GitVis3D
+
+1. Edit password to access Neo4j in cypherVis3DWebServer8080.js.
+
+2. Start nodejs GitVis3D Web server
+
    ```bash
    $ node cypherVis3DWebServer8080.js
    ```
