@@ -13,6 +13,7 @@ the [Neo4j](https://neo4j.com/download/other-releases/#releases) graph database.
 
 ## Demo movie
 https://www.youtube.com/watch?v=67s8WCEjIx8
+https://www.youtube.com/watch?v=xe1bV_o2aBc
 
 ## Live demo
 http://qa.fujimura.com:8080/gitVis3D.html
