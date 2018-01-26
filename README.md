@@ -12,7 +12,10 @@ To reduce the number of requests sent to the GitHub API, the created versioning 
 the [Neo4j](https://neo4j.com/download/other-releases/#releases) graph database.
 
 ## Demo movie
+Short: 
 https://www.youtube.com/watch?v=67s8WCEjIx8
+
+Long:
 https://www.youtube.com/watch?v=xe1bV_o2aBc
 
 ## Live demo
