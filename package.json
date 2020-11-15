@@ -1,0 +1,28 @@
+{
+  "name": "gitvis3d",
+  "version": "1.0.0",
+  "description": "GitVis3D is a visualization tool for git communities. This tool visualizes a versioning graph  that consists of contribution edges and update edges as 3D animation in which new nodes and edges  are added to the scene over time.",
+  "main": "cypherVis3DWebServer8080.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kofujimura/gitVis3D.git"
+  },
+  "author": "kofujimura",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kofujimura/gitVis3D/issues"
+  },
+  "homepage": "https://github.com/kofujimura/gitVis3D#readme",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "ejs": "^3.1.5",
+    "express": "^4.17.1",
+    "github-api": "^3.3.0",
+    "neo4j-driver": "^4.1.2",
+    "seraph": "^0.15.3",
+    "socket.io": "^3.0.1"
+  }
+}

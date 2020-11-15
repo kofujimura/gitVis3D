@@ -31,14 +31,7 @@ http://qa.fujimura.com:8080/gitVis3D.html
    ```bash
    git clone https://github.com/kofujimura/gitVis3D.git
    cd gitVis3D
-   npm init
-   npm install express --save
-   npm install ejs
-   npm install github-api
-   npm install neo4j-driver
-   npm install body-parser
-   npm install socket.io
-   npm install seraph
+   npm install
    ```
 
 ## How to get commit logs from a github repository
