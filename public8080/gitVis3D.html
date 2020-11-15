@@ -231,7 +231,12 @@
         $("#buttonA").on("click", function() {
           generateButtons();
         });
-        
+
+        // screenshot button logic
+        $("#buttonScreenshot").on("click", function() {
+          takeScreenshot(document, window, camera, renderer, scene, 2)
+        });
+
         $("#speed").slider({
           range: "min",
           value: 60,
