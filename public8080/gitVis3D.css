@@ -36,9 +36,17 @@ html,body {
   text-align: center;
 }
 
+.buttonScreenshot {
+  position: absolute;
+  top: 206px;
+  width: 200px;
+  color: white;
+  text-align: center;
+}
+
 .speed {
   position: absolute;
-  top: 200px;
+  top: 254px;
   width: 200px;
   color: white;
   text-align: center;
@@ -46,7 +54,7 @@ html,body {
 
 .scale {
   position: absolute;
-  top: 260px;
+  top: 300px;
   width: 200px;
   color: white;
   text-align: center;
@@ -54,7 +62,7 @@ html,body {
 
 .buttonA {
   position: absolute;
-  top: 340px;
+  top: 364px;
   width: 200px;
   color: white;
   text-align: center;
