@@ -3,13 +3,14 @@
 var express = require('express');
 var router = express.Router();
 var GitHub = require('github-api');
-var neo4j = require('neo4j-driver').v1;
+var neo4j = require('neo4j-driver');
 
 router.post('/', function (req, res, next) {
     function createGitHub(name, pass) {
         return new GitHub({
-            username: name,
-            password: pass
+            // username: name,
+            // password: pass
+            token: '8e7b204e0e35148469e5dd7330290c3fcbf6f5d9' // This is a dummy token use your own!
         });
     }
     var gh = createGitHub(req.body.name, req.body.pass);
@@ -23,7 +24,7 @@ router.post('/', function (req, res, next) {
     console.log('accessLimit:' + accessLimit);
     console.log('depthLimit:' + depthLimit);
     var repo = gh.getRepo(pgName[0], pgName[1]);
-    var driver = neo4j.driver("bolt://localhost", neo4j.auth.basic("neo4j", "djdi44ss99")); // to be specified in your environment.
+    var driver = neo4j.driver("bolt://localhost", neo4j.auth.basic("neo4j", "123")); // to be specified in your environment.
 
     var getCommitData = function (commitLimit) {
         return new Promise(function (resolve, reject) {
