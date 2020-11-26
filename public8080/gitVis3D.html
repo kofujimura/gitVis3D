@@ -29,9 +29,10 @@
       <p> End: <input type="text" class="datepic" id="endDate" /></p>
       <p>Project: 
         <select name="project" class="project" id="project">
-          <option value="neo4j/neo4j" selected>neo4j</option>
+          <option value="neo4j/neo4j">neo4j</option>
           <option value="d3/d3">d3</option>
           <option value="mrdoob/three.js">three.js</option>
+          <option value="bitcoin/bitcoin" selected>bitcoin</option>
         </select>
       </p>
       <p>Number of edges: <input type="text" class="limit" id="limit" value="1000" /></p>
@@ -156,7 +157,7 @@
         dateFormat: "yy-mm-dd"
       });
 
-      $("#startDate").datepicker().datepicker("setDate", new Date());
+      $("#startDate").datepicker().datepicker("setDate", new Date(2020,9,05));
       $("#startDate").on("click", function() {
         $(this).focus();
       });
@@ -648,7 +649,7 @@
           var ctx = canvas.getContext('2d');
           ctx.fillStyle = 'rgba(0,255,255,0.2)'; //graph.nodes[n].color;
           ctx.fillRect(0, 0, canvas.width, 32);
-          ctx.font = "28px sans-serif";
+          ctx.font = "14px sans-serif";
           ctx.textAlign = 'center';
           ctx.fillStyle = 'rgb(255,255,255)'; //graph.nodes[n].color;
           ctx.fillText(text, canvas.width / 2, 30, canvas.width);
@@ -713,7 +714,7 @@
         ctx.fillRect(0, 0, 128, 32);
         ctx.font = "28px sans-serif";
         ctx.textAlign = 'center';
-        ctx.fillStyle = 'rgb(0,0,0)';
+        ctx.fillStyle = 'rgb(25,31,32)';
         ctx.fillText(yearMonth, canvas.width / 2, canvas.height - 5, textWidth);
         var texture = new THREE.Texture(canvas);
         texture.needsUpdate = true;

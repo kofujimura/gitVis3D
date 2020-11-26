@@ -1,3 +1,5 @@
 node_modules
 package-lock.json
 .vscode
+public8080/.DS_Store
+token

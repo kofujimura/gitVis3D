@@ -37,6 +37,7 @@
                     <option value="neo4j/neo4j" selected>neo4j</option>
                     <option value="d3/d3">d3</option>
                     <option value="mrdoob/three.js">three.js</option>
+                    <option value="bitcoin/bitcoin">bitcoin</option>
                 </select>
             </td>
         </tr>        <tr>
@@ -99,7 +100,8 @@
 
             var request = $.ajax({
                 type: 'POST',
-                url: 'https://gitvis3d-kofujimura.c9users.io:8081/getdata',  // to be modified in your environment
+                // url: 'https://gitvis3d-kofujimura.c9users.io:8081/getdata',  // to be modified in your environment
+                url: 'http://localhost:3000/getdata',
                 datatype: 'json',
                 data: {
                     'name': name,
